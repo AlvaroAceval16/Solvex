@@ -1,50 +1,38 @@
 import * as React from "react";
-import { Paper, Stack, Typography, Skeleton, Box } from "@mui/material";
+import { Alert, AlertTitle, Skeleton } from "@mui/material";
+import { Info as InfoIcon } from "@mui/icons-material";
 
-export default function DarkStat({ label, value, loading: loadingProp }) {
-  const [val, setVal] = React.useState(value ?? null);
-  const [loading, setLoading] = React.useState(Boolean(loadingProp));
+export default function AlertInfo({ warning, action }) {
+  // Estado local
+  const [title, setTitle] = React.useState(warning?.title ?? "Advertencia");
+  const [actionText, setActionText] = React.useState(
+    action?.label ?? "Acción Recomendada"
+  );
+  const [loading, setLoading] = React.useState(
+    Boolean(action?.loading || warning?.loading)
+  );
 
-  // Sync con props
+  // Sincroniza cuando props cambian
   React.useEffect(() => {
-    if (value !== undefined) setVal(value);
-  }, [value]);
-
-  React.useEffect(() => {
-    setLoading(Boolean(loadingProp));
-  }, [loadingProp]);
+    if (warning?.title !== undefined) setTitle(warning.title);
+    if (action?.label !== undefined) setActionText(action.label);
+    setLoading(Boolean(action?.loading || warning?.loading));
+  }, [warning?.title, action?.label, action?.loading, warning?.loading]);
 
   return (
-    <Paper
+    <Alert
+      icon={<InfoIcon sx={{ color: "#000000", fontSize: 32, marginLeft: 5}} />}
+      severity="info"
       sx={{
-        bgcolor: "#1E1E1E",
-        color: "common.white",
         borderRadius: 2,
-        width: "100%",
+        width :"100%",
+        bgcolor: "white",
+        color: "black",
+        border: "1px solid #f5f5f5",
       }}
     >
-      <Stack
-        direction="column"
-        alignItems="flex-start"
-        spacing={1}
-        sx={{ p: 2 }}
-      >
-        <Typography color="#9e9e9e" variant="body2" sx={{ fontWeight: 600 }}>
-          {label}
-        </Typography>
-        <Box sx={{ minHeight: 36, display: "flex", alignItems: "center" }}>
-          {loading ? (
-            <Skeleton variant="text" width={120} height={28} />
-          ) : (
-            <Typography
-              variant="h5"
-              sx={{ fontWeight: "bold", lineHeight: 1.2 }}
-            >
-              {val ?? "—"}
-            </Typography>
-          )}
-        </Box>
-      </Stack>
-    </Paper>
-  );
+      <AlertTitle>{title}</AlertTitle>
+      {loading ? <Skeleton variant="text" width={200} /> : actionText}
+    </Alert>
+  );
 }

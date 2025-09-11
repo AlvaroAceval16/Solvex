@@ -19,7 +19,7 @@ export default function HistoryRow({ item }) {
 
   return (
     <ListItem
-      sx={{ px: 2, py: 1.5, width: "100%" }}
+      sx={{ px: 2, py: 1.5, width: "100%", border: "1px solid #e0e0e0", borderRadius: 2, mb: 2}}
       secondaryAction={
         <span
           className="material-symbols-outlined"
