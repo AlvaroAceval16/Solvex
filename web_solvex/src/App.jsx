@@ -28,101 +28,117 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 
-// ------- Theme -------
+/** ========== THEME ========== */
 const theme = createTheme({
-    palette: {
-        mode: "light", // cambia a "dark" si quieres modo oscuro
-        background: { default: "#f5f5f5" },
+    typography: {
+        fontFamily: "Inter, Roboto, Helvetica, Arial, sans-serif",
     },
-    shape: { borderRadius: 16 },
+    palette: {
+        mode: "light",
+        background: { default: "#ffffff" },
+    },
+    shape: { borderRadius: 5 },
     components: {
-        MuiPaper: {
-            styleOverrides: {
-                root: { boxShadow: "0 6px 24px rgba(0,0,0,.06)" },
-            },
-        },
+        MuiPaper: { styleOverrides: { root: { boxShadow: "0 6px 24px rgba(0,0,0,.06)" } } },
     },
 });
 
-// ------- Hook simulado con datos dummy -------
-// IMPORTANTE: no dependemos de 'data' para evitar bucles de render.
-function useMock(data, delay = 800) {
+/** ========== MOCK HOOK (sin bucles) ========== */
+function useMock(data, delay = 600) {
     const [state, setState] = React.useState({ data: null, loading: true, error: null });
 
     const load = React.useCallback(() => {
         setState({ data: null, loading: true, error: null });
-        const id = setTimeout(() => {
-            setState({ data, loading: false, error: null });
-        }, delay);
+        const id = setTimeout(() => setState({ data, loading: false, error: null }), delay);
         return () => clearTimeout(id);
-    }, [delay]); // <-- sin 'data' aquí
+    }, [delay]); // OJO: sin 'data' para evitar re-renders infinitos
 
-    React.useEffect(() => { load(); }, [load]);
+    React.useEffect(() => load(), [load]);
 
     return { ...state, reload: load };
 }
 
-// ------- Reusable Stat Card -------
+/** ========== WIDGET DE MÉTRICAS ========== */
 function DarkStat({ label, value, loading }) {
     return (
-        <Paper sx={{ bgcolor: "grey.900", color: "common.white", borderRadius: 2, flex: 1 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ p: 2 }}>
-                <Typography variant="body2" sx={{ opacity: 0.8 }}>{label}</Typography>
+        <Paper sx={{ bgcolor: "#1E1E1E", color: "common.white", borderRadius: 2, width:"100%"}}>
+            <Stack direction="column" alignItems="flex-start" spacing={1} sx={{ p: 2 }}>
+                <Typography color="#757575" variant="body1" sx={{ fontWeight: "600" }}>{label}</Typography>
                 {loading ? (
-                    <Skeleton variant="text" width={80} height={36} />
+                    <Skeleton variant="text" width={160} height={32} />
                 ) : (
-                    <Typography variant="h5" fontWeight={800}>{value ?? "—"}</Typography>
+                    <Typography variant="h5" sx={{ fontWeight: "bold" }}>{value ?? "—"}</Typography>
                 )}
             </Stack>
         </Paper>
     );
 }
 
+/** ========== FILA DE HISTORIAL ========== */
 function HistoryRow({ item }) {
     const date = new Date(item.dateISO);
     const fecha = date.toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" });
     const hora = date.toLocaleTimeString("es-MX", { hour12: false });
+
     return (
         <ListItem
-            sx={{ px: 2, py: 1.5 }}
+            sx={{ px: 2, py: 1.5, width: "100%" }}
             secondaryAction={
-                <IconButton edge="end" aria-label={item.ok ? "aprobado" : "rechazado"}>
-                    {item.ok ? (
-                        <CheckCircleIcon sx={{ color: "success.main" }} />
-                    ) : (
-                        <CloseIcon sx={{ color: "error.main" }} />
-                    )}
-                </IconButton>
+                <span
+                    className="material-symbols-outlined"
+                    style={{
+                        fontSize: 32,
+                        color: "white",
+                        backgroundColor: item.ok ? "#81E07B" : "#F47F7D",
+                        borderRadius: "50%",
+                        padding: 8,
+                    }}
+                >
+                  {item.ok ? "check" : "close"}
+                </span>
             }
         >
-            <ListItemAvatar>
-                <Avatar variant="rounded" sx={{ bgcolor: "grey.200", width: 48, height: 48 }} src={item.thumbnailUrl}>
+            <ListItemAvatar sx={{ mr: 2 }}>
+                <Avatar variant="rounded" sx={{ bgcolor: "grey.200", width: 100, height: 106 }} src={item.thumbnailUrl}>
                     {!item.thumbnailUrl && <ImageIcon sx={{ color: "grey.500" }} />}
                 </Avatar>
             </ListItemAvatar>
+
+            {/* Evitamos <div> dentro de <p> forzando 'component: div' en secundarios */}
             <ListItemText
-                primary={<Typography fontWeight={700}>{item.title}</Typography>}
+                primary={<Typography fontWeight={600}>{item.title}</Typography>}
                 secondary={
-                    <Stack spacing={0.2}>
-                        <Typography variant="body2" color="text.primary">{item.subtitle}</Typography>
-                        <Typography variant="caption" color="text.secondary">Fecha del análisis: {fecha}</Typography>
-                        <Typography variant="caption" color="text.secondary">Hora del análisis: {hora}</Typography>
-                    </Stack>
+                    <>
+                        <Typography variant="body2" color="#757575" sx={{ fontWeight: 600 }} component="div">{item.subtitle}</Typography>
+                        <Typography variant="body2" color="#757575" component="div">Fecha del análisis: {fecha}</Typography>
+                        <Typography variant="body2" color="#757575" component="div">Hora del análisis: {hora}</Typography>
+                    </>
                 }
-                // <-- evita <div> dentro de <p>
-                secondaryTypographyProps={{ component: "div" }}
             />
         </ListItem>
     );
 }
 
-// ------- Main Component -------
+/** ========== APP WRAPPER (FULL HEIGHT) ========== */
 export default function SolvexPageWrapper() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Box sx={{ minHeight: "100vh", bgcolor: "background.default", display: "flex" }}>
-                <Box sx={{ flex: 1, p: { xs: 2, md: 4 } }}>
+            {/* Contenedor de página: flex columna + ocupa todo el viewport */}
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    minHeight: "100vh",   // toda la altura de la ventana
+                    width: "100vw",
+                    paddingX: 4,
+                    paddingTop: 2,
+                    bgcolor: "background.default",
+                }}
+            >
+                {/* Contenido principal que CRECE */}
+                <Box sx={{ flex: 1, display: "flex", flexDirection: "column", p: { xs: 2, md: 4 }, minHeight: 0 ,
+                    width: "100%"}}>
                     <SolvexInspection title="Solvex" />
                 </Box>
             </Box>
@@ -130,8 +146,9 @@ export default function SolvexPageWrapper() {
     );
 }
 
+/** ========== PANTALLA PRINCIPAL ========== */
 function SolvexInspection({ title }) {
-    // Datos simulados
+    // Simulaciones
     const status = useMock({ ok: true, detectedLabel: "Componente detectado" });
     const humidity = useMock({ value: 30.58, unit: "%" });
     const temperature = useMock({ value: 28, unit: "°C" });
@@ -151,72 +168,112 @@ function SolvexInspection({ title }) {
     };
 
     return (
-        <Stack spacing={3} sx={{ height: "100%" }}>
-            {/* Header */}
+        // Este Stack es el contenedor vertical de TODA la pantalla
+        <Stack spacing={3} sx={{ flex: 1, minHeight: 0 }}>
+            {/* Header (altura fija) */}
             <Stack direction="row" alignItems="center" spacing={2}>
                 <Box sx={{ width: 56, height: 56, bgcolor: "grey.300", borderRadius: 2 }} />
                 <Typography variant="h3" fontWeight={700}>{title}</Typography>
                 <Box sx={{ flex: 1 }} />
                 <Tooltip title="Actualizar">
-                    <Button onClick={refreshAll} startIcon={<RefreshIcon />} variant="outlined" disabled={anyLoading}>Recargar</Button>
+                    <Button onClick={refreshAll} startIcon={<RefreshIcon />} variant="outlined" disabled={anyLoading}
+                            sx={{
+                                bgcolor: "white",
+                                color: "black",
+                                borderColor: "#f5f5f5",
+                                fontWeight: 600,
+                                textTransform: "none",
+                                "&:hover": {
+                                    bgcolor: "#f5f5f5",
+                                    borderColor: "#bdbdbd",
+                                },
+                            }}
+                    >
+                        Recargar
+                    </Button>
                 </Tooltip>
             </Stack>
 
-            {/* Alertas */}
-            <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                {warning.loading ? (
-                    <Skeleton variant="text" width={180} />
+            {/* Alerta (altura fija) */}
+            <Alert
+                icon={<InfoIcon sx={{ color: "#000000", fontSize: 32 }} />}
+                severity="info"
+                sx={{
+                    borderRadius: 2,
+                    bgcolor: "white",
+                    color: "black",
+                    border: "1px solid #f5f5f5",
+                }}
+            >
+                <AlertTitle>{warning.data?.title ?? "Advertencia"}</AlertTitle>
+                {action.loading ? (
+                    <Skeleton variant="text" width={200} />
                 ) : (
-                    <Alert icon={<InfoIcon />} severity="info" variant="outlined" sx={{ borderRadius: 2 }}>
-                        <AlertTitle>{warning.data?.title ?? "Advertencia"}</AlertTitle>
-                        {action.loading ? <Skeleton variant="text" width={200} /> : (action.data?.label ?? "Acción Recomendada")}
-                    </Alert>
+                    action.data?.label ?? "Acción Recomendada"
                 )}
-            </Paper>
+            </Alert>
+            {/* Zona central (DEBE CRECER): izquierda imagen, derecha stats */}
+            <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={3}
+                sx={{ flex: 1, minHeight: 0 }}
+            >
+                {/* COLUMNA IZQUIERDA: Imagen (crece) */}
+                <Box sx={{display: "flex", flexDirection: "column", minHeight: 0, paddingRight:10}}>
+                    <Typography variant="subtitle1" marginBottom={2} sx={{ fontWeight: 600, fontSize: "1.25rem" }}>Inspección del componente</Typography>
 
-            {/* Inspección + Datos */}
-            <Stack direction={{ xs: "column", md: "row" }} spacing={3} flex={1}>
-                {/* Imagen grande */}
-                <Box sx={{ flex: { xs: "1 1 auto", md: "2 1 0" }, display: "flex", flexDirection: "column" }}>
-                    <Typography variant="subtitle1" sx={{ mb: 1 }}>Inspección del componente</Typography>
                     <Paper
                         sx={{
-                            flex: 1,
+                            width: 900,
+                            height: 500,
                             p: 0,
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             bgcolor: "grey.100",
                             overflow: "hidden",
-                            minHeight: { xs: 220, sm: 280, md: 360, lg: 420 },
                         }}
                     >
                         {image.loading ? (
                             <Skeleton variant="rectangular" width="100%" height="100%" />
                         ) : (
-                            <Box component="img" src={image.data?.url} alt="Inspección" sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <Box
+                                component="img"
+                                src={image.data?.url}
+                                alt="Inspección"
+                                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
                         )}
                     </Paper>
                 </Box>
 
-                {/* Estado + Datos */}
-                <Box sx={{ flex: { xs: "1 1 auto", md: "1 1 0" }, minWidth: 280 }}>
-                    <Stack spacing={2} sx={{ height: "100%" }}>
-                        <Paper sx={{ bgcolor: status.data?.ok ? "success.light" : "warning.light", color: "success.contrastText", p: 2, borderRadius: 2 }}>
-                            <Stack direction="row" alignItems="center" spacing={1}>
+                {/* COLUMNA DERECHA: Estado + métricas (columna que se estira) */}
+                <Box
+                    sx={{
+                        flex: { xs: "1 1 auto", md: "1 1 0" },
+                        display: "flex",
+                        flexDirection: "column",
+                        minWidth: 280,
+                        minHeight: 0,           // <-- importante en layouts con flex hijos
+                    }}
+                >
+                    <Stack spacing={2.5} sx={{ flex: 1, minHeight: 0, width:"100%" }} paddingY={7}>
+                        {/* Estado */}
+                        <Paper sx={{ bgcolor: status.data?.ok ? "#81E07B" : "#F47F7D", color: "success.contrastText", p: 2, borderRadius: 2 }}>
+                            <Stack direction="row" alignItems="center" spacing={3}>
                                 {status.loading ? (
                                     <Skeleton variant="circular" width={24} height={24} />
                                 ) : status.data?.ok ? (
-                                    <CheckCircleIcon />
-                                ) : (
-                                    <CloseIcon />
-                                )}
-                                <Box>
-                                    <Typography fontWeight={700}>Estado del componente</Typography>
-                                    {status.loading ? (
-                                        <Skeleton variant="text" width={160} />
+                                    <CheckCircleIcon sx={{ color: "#000000", fontSize: 40 }} />
                                     ) : (
-                                        <Typography variant="body2">
+                                    <CloseIcon sx={{ color: "#000000" , fontSize: 40}} />
+                            )}
+                                <Box>
+                                    <Typography variant="h6" fontWeight={600} color="#000000">Estado del componente</Typography>
+                                    {status.loading ? (
+                                        <Skeleton variant="text" width={160} height={24} />
+                                    ) : (
+                                        <Typography variant="body2" color="#000000" variant="h7">
                                             {status.data?.detectedLabel ?? (status.data?.ok ? "Componente detectado" : "No detectado")}
                                         </Typography>
                                     )}
@@ -224,7 +281,8 @@ function SolvexInspection({ title }) {
                             </Stack>
                         </Paper>
 
-                        <Typography variant="subtitle1">Datos de análisis</Typography>
+                        {/* Métricas */}
+                        <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: "1.25rem" }}>Datos de análisis</Typography>
                         <DarkStat label="Humedad" value={humidity.data ? `${humidity.data.value}${humidity.data.unit ?? "%"}` : undefined} loading={humidity.loading} />
                         <DarkStat label="Temperatura" value={temperature.data ? `${temperature.data.value}${temperature.data.unit ?? "°C"}` : undefined} loading={temperature.loading} />
                         <DarkStat label="Luz ambiental" value={lux.data ? `${lux.data.value}${lux.data.unit ?? " lx"}` : undefined} loading={lux.loading} />
@@ -232,14 +290,14 @@ function SolvexInspection({ title }) {
                 </Box>
             </Stack>
 
-            {/* Historial */}
-            <Box>
-                <Typography variant="subtitle1" sx={{ mb: 1 }}>Historial</Typography>
-                <Paper sx={{ p: 0, borderRadius: 2 }}>
+            {/* Historial (no crece, queda al final; si quieres que crezca, añade flex:1 aquí y minHeight:0) */}
+            <Box sx={{ flexShrink: 0 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: "1.25rem" }} marginBottom={2}>Historial</Typography>
+                <Paper sx={{ p: 0, borderRadius: 2, border: "1px solid #f5f5f5"}}>
                     {history.loading ? (
                         <Stack spacing={0}>
                             <Skeleton variant="rectangular" height={76} />
-                            <Divider />
+                            <Divider sx={{ borderColor: "#f5f5f5" }}/>
                             <Skeleton variant="rectangular" height={76} />
                         </Stack>
                     ) : (
@@ -247,7 +305,7 @@ function SolvexInspection({ title }) {
                             {(history.data ?? []).map((it) => (
                                 <React.Fragment key={it.id}>
                                     <HistoryRow item={it} />
-                                    <Divider />
+                                    <Divider sx={{ borderColor: "#f5f5f5" }} />
                                 </React.Fragment>
                             ))}
                         </List>
@@ -255,8 +313,8 @@ function SolvexInspection({ title }) {
                 </Paper>
             </Box>
 
-            {/* Errores globales */}
-            <Stack direction="row" spacing={1} flexWrap="wrap">
+            {/* Errores globales (no crece) */}
+            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ flexShrink: 0 }}>
                 {[status, humidity, temperature, lux, image, warning, action, history]
                     .map((s, i) => ({ idx: i, err: s.error }))
                     .filter(x => !!x.err)
